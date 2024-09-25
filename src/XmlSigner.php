@@ -4,6 +4,7 @@ namespace Selective\XmlDSig;
 
 use DOMDocument;
 use DOMElement;
+use DOMNode;
 use DOMXPath;
 use OpenSSLCertificate;
 use Selective\XmlDSig\Exception\XmlSignerException;
@@ -20,7 +21,7 @@ final class XmlSigner
 
     private CryptoSignerInterface $cryptoSigner;
 
-    private string $elementName = 'Signature';
+    private DOMNode|string $elementName = 'Signature';
 
     private ?string $prefix = null;
 
@@ -104,10 +105,6 @@ final class XmlSigner
      */
     private function appendSignature(DOMDocument $xml, string $digestValue): void
     {
-        $signatureElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#', $this->getElementName());
-
-        $prefix = $this->getElementPrefix();
-
         // Append the element to the XML document.
         // We insert the new element as root (child of the document)
 
@@ -115,8 +112,14 @@ final class XmlSigner
             throw new UnexpectedValueException('Undefined document element');
         }
 
-        $xml->documentElement->appendChild($signatureElement);
-
+        if (is_string($this->getElementName())) {
+            $signatureElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#', $this->getElementName());
+            $xml->documentElement->appendChild($signatureElement);
+        } else {
+            $signatureElement = $this->getElementName();
+        }
+        $prefix = $this->getElementPrefix();
+        
         $signedInfoElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#', "{$prefix}SignedInfo");
         $signatureElement->appendChild($signedInfoElement);
 
@@ -232,17 +235,17 @@ final class XmlSigner
     }
 
     /**
-     * @return string
+     * @return DOMNode|string
      */
-    public function getElementName(): string
+    public function getElementName(): DOMNode|string
     {
         return $this->elementName;
     }
 
     /**
-     * @param string $elementName
+     * @param DOMNode|string $elementName
      */
-    public function setElementName(string $elementName): void
+    public function setElementName(DOMNode|string $elementName): void
     {
         $this->elementName = $elementName;
     }
@@ -253,6 +256,11 @@ final class XmlSigner
     public function getElementPrefix(): string
     {
         if (!is_null($this->prefix)) {
+            return $this->prefix;
+        }
+        
+        if ($this->getElementName() instanceof DOMNode) {
+            $this->prefix = $this->getElementName()->prefix . ":";
             return $this->prefix;
         }
 
