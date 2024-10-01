@@ -210,8 +210,8 @@ final class XmlSigner
      */
     private function appendX509Certificates(DOMDocument $xml, DOMElement $keyInfoElement, array $certificates): void
     {
-        $prefix = $this->getElementPrefix();
-        
+        $prefix = $this->getElementPrefix() . ':';
+
         $x509DataElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#',"{$prefix}X509Data");
         $keyInfoElement->appendChild($x509DataElement);
 
