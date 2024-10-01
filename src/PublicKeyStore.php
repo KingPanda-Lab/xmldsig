@@ -117,10 +117,10 @@ final class PublicKeyStore
     public function loadFromDocument(DOMDocument $xml): void
     {
         $xpath = new DOMXPath($xml);
-        $xpath->registerNamespace('xmlns', 'http://www.w3.org/2000/09/xmldsig#');
+        $xpath->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
         // Find the X509Certificate nodes
-        $x509CertificateNodes = $xpath->query('//xmlns:Signature/xmlns:KeyInfo/xmlns:X509Data/xmlns:X509Certificate');
+        $x509CertificateNodes = $xpath->query('//ds:Signature/ds:KeyInfo/ds:X509Data/ds:X509Certificate');
 
         // Throw an exception if no signature was found.
         if (!$x509CertificateNodes || $x509CertificateNodes->length < 1) {

@@ -67,19 +67,19 @@ final class XmlSignatureVerifier
      */
     public function verifyDocument(DOMDocument $xml): bool
     {
-        $signatureAlgorithm = $this->getDocumentAlgorithm($xml, '//xmlns:SignedInfo/xmlns:SignatureMethod');
-        $digestAlgorithm = $this->getDocumentAlgorithm($xml, '//xmlns:DigestMethod');
+        $signatureAlgorithm = $this->getDocumentAlgorithm($xml, '//ds:SignedInfo/ds:SignatureMethod');
+        $digestAlgorithm = $this->getDocumentAlgorithm($xml, '//ds:DigestMethod');
         $signatureValue = $this->getSignatureValue($xml);
         $xpath = new DOMXPath($xml);
-        $xpath->registerNamespace('xmlns', 'http://www.w3.org/2000/09/xmldsig#');
+        $xpath->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
         /** @var DOMNodeList $nodes */
-        $nodes = $xpath->evaluate('//xmlns:Signature/xmlns:SignedInfo');
+        $nodes = $xpath->evaluate('//ds:Signature/ds:SignedInfo');
 
         /** @var DOMElement $signedInfoNode */
         foreach ($nodes as $signedInfoNode) {
             // Remove SignatureValue value
-            $signatureValueElement = $this->xmlReader->queryDomNode($xpath, '//xmlns:SignatureValue', $signedInfoNode);
+            $signatureValueElement = $this->xmlReader->queryDomNode($xpath, '//ds:SignatureValue', $signedInfoNode);
             $signatureValueElement->nodeValue = '';
 
             $canonicalData = $signedInfoNode->C14N(true, false);
@@ -116,7 +116,7 @@ final class XmlSignatureVerifier
 
         // Remove signature elements
         /** @var DOMElement $signatureNode */
-        foreach ($xpath->query('//xmlns:Signature') ?: [] as $signatureNode) {
+        foreach ($xpath->query('//ds:Signature') ?: [] as $signatureNode) {
             if (!$signatureNode->parentNode) {
                 continue;
             }
@@ -145,7 +145,7 @@ final class XmlSignatureVerifier
     private function getDocumentAlgorithm(DOMDocument $xml, string $expression): string
     {
         $xpath = new DOMXPath($xml);
-        $xpath->registerNamespace('xmlns', 'http://www.w3.org/2000/09/xmldsig#');
+        $xpath->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
         $xpath->registerNamespace('Algorithm', 'http://www.w3.org/TR/2001/REC-xml-c14n-20010315');
 
         $signatureMethodNodes = $xpath->query($expression);
@@ -186,10 +186,10 @@ final class XmlSignatureVerifier
     private function getSignatureValue(DOMDocument $xml): string
     {
         $xpath = new DOMXPath($xml);
-        $xpath->registerNamespace('xmlns', 'http://www.w3.org/2000/09/xmldsig#');
+        $xpath->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
         // Find the SignatureValue node
-        $signatureNodes = $xpath->query('//xmlns:Signature/xmlns:SignatureValue');
+        $signatureNodes = $xpath->query('//ds:Signature/ds:SignatureValue');
 
         // Throw an exception if no signature was found.
         if (!$signatureNodes || $signatureNodes->length < 1) {
@@ -232,10 +232,10 @@ final class XmlSignatureVerifier
     private function getDigestValue(DOMDocument $xml): string
     {
         $xpath = new DOMXPath($xml);
-        $xpath->registerNamespace('xmlns', 'http://www.w3.org/2000/09/xmldsig#');
+        $xpath->registerNamespace('ds', 'http://www.w3.org/2000/09/xmldsig#');
 
         // Find the DigestValue node
-        $signatureNodes = $xpath->query('//xmlns:Signature/xmlns:SignedInfo/xmlns:Reference/xmlns:DigestValue');
+        $signatureNodes = $xpath->query('//ds:Signature/ds:SignedInfo/ds:Reference/ds:DigestValue');
 
         // Throw an exception if no signature was found.
         if (!$signatureNodes || $signatureNodes->length < 1) {

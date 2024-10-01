@@ -21,9 +21,9 @@ final class XmlSigner
 
     private CryptoSignerInterface $cryptoSigner;
 
-    private DOMNode|string $elementName = 'Signature';
+    private bool $firstElement = false;
 
-    private ?string $prefix = null;
+    private ?string $prefix = "ds";
 
     public function __construct(CryptoSignerInterface $cryptoSigner)
     {
@@ -112,14 +112,15 @@ final class XmlSigner
             throw new UnexpectedValueException('Undefined document element');
         }
 
-        if (is_string($this->getElementName())) {
-            $signatureElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#', $this->getElementName());
-            $xml->documentElement->appendChild($signatureElement);
+        $prefix = $this->getElementPrefix() . ':';
+        $signatureElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#', "{$prefix}Signature");
+
+        if ($this->isFirstElement() && !is_null($xml->documentElement->firstChild)) {
+            $xml->documentElement->insertBefore($signatureElement, $xml->documentElement->firstChild);
         } else {
-            $signatureElement = $this->getElementName();
+            $xml->documentElement->appendChild($signatureElement);
         }
-        $prefix = $this->getElementPrefix();
-        
+
         $signedInfoElement = $xml->createElementNS('http://www.w3.org/2000/09/xmldsig#', "{$prefix}SignedInfo");
         $signatureElement->appendChild($signedInfoElement);
 
@@ -193,7 +194,8 @@ final class XmlSigner
         $signatureValue = $this->cryptoSigner->computeSignature($c14nSignedInfo);
 
         $xpath = new DOMXpath($xml);
-        $signatureValueElement = $this->xmlReader->queryDomNode($xpath, '//ds:SignatureValue', $signatureElement);
+        $xpath->registerNamespace($this->prefix, 'http://www.w3.org/2000/09/xmldsig#');
+        $signatureValueElement = $this->xmlReader->queryDomNode($xpath, "//{$prefix}SignatureValue", $signatureElement);
         $signatureValueElement->nodeValue = base64_encode($signatureValue);
     }
 
@@ -235,19 +237,19 @@ final class XmlSigner
     }
 
     /**
-     * @return DOMNode|string
+     * @return bool
      */
-    public function getElementName(): DOMNode|string
+    public function isFirstElement(): bool
     {
-        return $this->elementName;
+        return $this->firstElement;
     }
 
     /**
-     * @param DOMNode|string $elementName
+     * @param DOMNode $firstElement
      */
-    public function setElementName(DOMNode|string $elementName): void
+    public function signatureFirstElement(): void
     {
-        $this->elementName = $elementName;
+        $this->firstElement = true;
     }
 
     /**
@@ -255,23 +257,6 @@ final class XmlSigner
      */
     public function getElementPrefix(): string
     {
-        if (!is_null($this->prefix)) {
-            return $this->prefix;
-        }
-        
-        if ($this->getElementName() instanceof DOMNode) {
-            $this->prefix = $this->getElementName()->prefix . ":";
-            return $this->prefix;
-        }
-
-        $elementParts = explode(':', $this->getElementName());
-        if (count($elementParts) !== 2) {
-            $prefix = '';
-        } else {
-            $prefix = $elementParts[0] . ':';
-        }
-
-        $this->prefix = $prefix;
         return $this->prefix;
     }
 }

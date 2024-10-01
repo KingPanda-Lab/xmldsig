@@ -61,7 +61,7 @@ final class XmlSignatureTest extends TestCase
 
                 $xmlSigner = new XmlSigner($cryptoSigner);
                 $xmlSigner->setReferenceUri('');
-
+                $xmlSigner->signatureFirstElement();
                 $signedXml = $xmlSigner->signXml(file_get_contents($filename));
 
                 // verify
